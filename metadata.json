@@ -1,0 +1,6 @@
+{
+  "name": "MultiStream Hub",
+  "description": "Unified stream destination manager, OBS profile calibrator, metadata synchronizer, and multi-cast dashboard solver.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
