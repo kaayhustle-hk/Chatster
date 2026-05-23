@@ -17,6 +17,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
@@ -333,7 +336,7 @@ fun TabSelector(
         edgePadding = 0.dp,
         indicator = { tabPositions ->
             TabRowDefaults.SecondaryIndicator(
-                modifier = Modifier.tabIndicatorOffset(tabPositions[tabs.indexOfFirst { it.first == activeTab }]),
+                modifier = Modifier.tabIndicatorOffset(tabPositions[tabs.indexOfFirst { it.first == activeTab }.coerceAtLeast(0)]),
                 color = ActiveNeon,
                 height = 2.dp
             )
@@ -557,8 +560,8 @@ fun FocusVideoScreenPlayer(stream: LiveStreamInfo) {
                 val spacing = size.width / count
                 
                 for (i in 0..count) {
-                    val factor = sin((i.toFloat() / count * 4f * Math.PI) + (animatedWavelength * 2f * Math.PI)).toFloat()
-                    val barHeight = 120f * factor * (1f - (Math.abs(i - count / 2f).toFloat() / (count / 2f)))
+                    val factor = kotlin.math.sin((i.toFloat() / count * 4f * Math.PI) + (animatedWavelength * 2f * Math.PI)).toFloat()
+                    val barHeight = 120f * factor * (1f - (kotlin.math.abs(i - count / 2f).toFloat() / (count / 2f)))
                     
                     drawLine(
                         color = specColor.copy(alpha = 0.35f),
@@ -715,37 +718,39 @@ fun MosaicSplitScreenPlayer(
         Column(modifier = Modifier.padding(8.dp)) {
             // Split-Grid top row
             Row(modifier = Modifier.fillMaxWidth()) {
+                val fallbackItem = LiveStreamInfo(0, "Pending Signal", "Waiting for broadcast transmission", "System", 0, "N/A", 0xFF333333)
                 Box(
                     modifier = Modifier
                         .weight(1f)
                         .padding(4.dp)
                 ) {
-                    MosaicPlayerTile(stream = streams.getOrElse(0) { streams[0] }, viewModel = viewModel)
+                    MosaicPlayerTile(stream = streams.getOrElse(0) { fallbackItem }, viewModel = viewModel)
                 }
                 Box(
                     modifier = Modifier
                         .weight(1f)
                         .padding(4.dp)
                 ) {
-                    MosaicPlayerTile(stream = streams.getOrElse(1) { streams[1] }, viewModel = viewModel)
+                    MosaicPlayerTile(stream = streams.getOrElse(1) { fallbackItem }, viewModel = viewModel)
                 }
             }
 
             // Split-Grid bottom row
             Row(modifier = Modifier.fillMaxWidth()) {
+                val fallbackItem = LiveStreamInfo(0, "Pending Signal", "Waiting for broadcast transmission", "System", 0, "N/A", 0xFF333333)
                 Box(
                     modifier = Modifier
                         .weight(1f)
                         .padding(4.dp)
                 ) {
-                    MosaicPlayerTile(stream = streams.getOrElse(2) { streams[2] }, viewModel = viewModel)
+                    MosaicPlayerTile(stream = streams.getOrElse(2) { fallbackItem }, viewModel = viewModel)
                 }
                 Box(
                     modifier = Modifier
                         .weight(1f)
                         .padding(4.dp)
                 ) {
-                    MosaicPlayerTile(stream = streams.getOrElse(3) { streams[3] }, viewModel = viewModel)
+                    MosaicPlayerTile(stream = streams.getOrElse(3) { fallbackItem }, viewModel = viewModel)
                 }
             }
         }
@@ -1004,7 +1009,7 @@ fun LiveDashboardChatPanel(
                 edgePadding = 0.dp,
                 indicator = { tabPositions ->
                     TabRowDefaults.SecondaryIndicator(
-                        modifier = Modifier.tabIndicatorOffset(tabPositions[platformChoices.indexOf(activeChatPlatform)]),
+                        modifier = Modifier.tabIndicatorOffset(tabPositions[platformChoices.indexOf(activeChatPlatform).coerceAtLeast(0)]),
                         color = ActiveNeon,
                         height = 1.dp
                     )

@@ -407,7 +407,11 @@ class StreamHubViewModel(private val repository: StreamPlatformRepository) : Vie
 
     fun savePlatform(platform: StreamingPlatformEntity) {
         viewModelScope.launch {
-            repository.insert(platform)
+            if (platform.id == 0) {
+                repository.insert(platform)
+            } else {
+                repository.update(platform)
+            }
         }
     }
 
