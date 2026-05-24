@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "724583410208",
+    "project_id": "mystreamhub-9a35c",
+    "storage_bucket": "mystreamhub-9a35c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:724583410208:android:253ccb04c3b1a0015c6a45",
+        "android_client_info": {
+          "package_name": "com.aistudio.multistreamhub.wtpqz"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAoF9qV91MdyDKbbaXnuLgWR_OuhzIx6wk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:724583410208:android:0601a5e1a705f4c95c6a45",
+        "android_client_info": {
+          "package_name": "com.aistudio.multistreamhub.wtpqz"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAoF9qV91MdyDKbbaXnuLgWR_OuhzIx6wk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
