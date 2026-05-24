@@ -18,6 +18,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import com.example.ui.theme.*
+
+// Assuming some colors are defined in a Theme file or here.
+// Re-adding needed colors if missing from StreamHubAuthScreen scope.
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -29,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.viewmodel.StreamHubViewModel
+import com.example.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -388,15 +393,14 @@ fun StreamHubAuthScreen(
                         Text("Or authenticate with Provider", style = MaterialTheme.typography.labelSmall, color = MutedSlate, modifier = Modifier.align(Alignment.CenterHorizontally))
                         
                         val context = androidx.compose.ui.platform.LocalContext.current
+                        // Twitch OAuth
                         Button(
                             onClick = {
-                                try {
-                                    val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("streamhub://auth/twitch#access_token=simulated_token_12345"))
-                                    // intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK) // Removed to prevent singleTask clashes
-                                    context.startActivity(intent)
-                                } catch (e: Exception) {
-                                    e.printStackTrace()
-                                }
+                                val clientId = "5pj2u1459fp0qzssb6lvalz5s8htsa"
+                                val redirectUri = "streamhub://auth/twitch"
+                                val authUrl = "https://id.twitch.tv/oauth2/authorize?client_id=$clientId&redirect_uri=$redirectUri&response_type=token&scope=user_read"
+                                val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(authUrl))
+                                context.startActivity(intent)
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = TwitchPurple, contentColor = Color.White),
                             modifier = Modifier.fillMaxWidth().height(42.dp)
@@ -405,16 +409,15 @@ fun StreamHubAuthScreen(
                             Spacer(Modifier.width(8.dp))
                             Text("Sign in with Twitch", fontWeight = FontWeight.Bold)
                         }
-                        
+
+                        // YouTube/Google OAuth
                         Button(
                             onClick = {
-                                try {
-                                    val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("streamhub://auth/youtube#access_token=simulated_token_54321"))
-                                    // intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK) // Removed to prevent singleTask clashes
-                                    context.startActivity(intent)
-                                } catch (e: Exception) {
-                                    e.printStackTrace()
-                                }
+                                val clientId = "675847733418-07isnrn0qpbm0hj88n6mhh4obuoqqrrh.apps.googleusercontent.com"
+                                val redirectUri = "streamhub://auth/youtube"
+                                val authUrl = "https://accounts.google.com/o/oauth2/v2/auth?client_id=$clientId&redirect_uri=$redirectUri&response_type=token&scope=email profile https://www.googleapis.com/auth/youtube.readonly"
+                                val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(authUrl))
+                                context.startActivity(intent)
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = YoutubeRed, contentColor = Color.White),
                             modifier = Modifier.fillMaxWidth().height(42.dp)
@@ -422,6 +425,23 @@ fun StreamHubAuthScreen(
                             Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(Modifier.width(8.dp))
                             Text("Sign in with YouTube", fontWeight = FontWeight.Bold)
+                        }
+                        
+                        // Kick OAuth
+                        Button(
+                            onClick = {
+                                val clientId = "01KSBHA8BHVDREYV62N08EV76C"
+                                val redirectUri = "streamhub://auth/kick"
+                                val authUrl = "https://kick.com/oauth/authorize?client_id=$clientId&redirect_uri=$redirectUri&response_type=token&scope=user"
+                                val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(authUrl))
+                                context.startActivity(intent)
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = KickGreen, contentColor = CosmicBlack),
+                            modifier = Modifier.fillMaxWidth().height(42.dp)
+                        ) {
+                            Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Text("Sign in with Kick", fontWeight = FontWeight.Bold)
                         }
                     }
                 }
