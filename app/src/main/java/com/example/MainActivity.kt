@@ -1,6 +1,8 @@
 package com.example
 
 import android.os.Bundle
+import android.content.Intent
+import android.net.Uri
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -19,6 +21,8 @@ import com.example.viewmodel.StreamHubViewModelFactory
 
 class MainActivity : ComponentActivity() {
     
+    private lateinit var viewModel: StreamHubViewModel
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
@@ -28,9 +32,12 @@ class MainActivity : ComponentActivity() {
         val appRepository = (application as StreamHubApplication).repository
         
         // Instantiate our StreamHubViewModel using its Factory
-        val viewModel: StreamHubViewModel by viewModels {
+        val vm: StreamHubViewModel by viewModels {
             StreamHubViewModelFactory(appRepository)
         }
+        viewModel = vm
+        
+        handleDeepLink(intent)
         
         setContent {
             MyApplicationTheme {
@@ -58,6 +65,31 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleDeepLink(intent)
+    }
+
+    private fun handleDeepLink(intent: Intent?) {
+        try {
+            val uri = intent?.data ?: return
+            if (uri.scheme == "streamhub" && uri.host == "auth") {
+                // Implicit OAuth returns access token in fragment part of URI
+                val fragment = uri.fragment ?: uri.encodedFragment
+                val accessToken = fragment?.split("&")?.firstOrNull { it.startsWith("access_token=") }?.substringAfter("access_token=")
+                val code = if (uri.isHierarchical) uri.getQueryParameter("code") else null
+                
+                val token = accessToken ?: code
+                if (token != null) {
+                    val platformRaw = uri.path?.removePrefix("/") ?: "twitch"
+                    viewModel.handleOAuthToken(platformRaw, token)
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 }

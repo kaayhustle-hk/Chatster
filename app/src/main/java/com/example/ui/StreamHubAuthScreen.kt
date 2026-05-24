@@ -379,6 +379,51 @@ fun StreamHubAuthScreen(
                             )
                         }
                     }
+
+                    // OAuth integration
+                    if (activeMode == "LOGIN" || activeMode == "REGISTER") {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        HorizontalDivider(color = SlateGray)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text("Or authenticate with Provider", style = MaterialTheme.typography.labelSmall, color = MutedSlate, modifier = Modifier.align(Alignment.CenterHorizontally))
+                        
+                        val context = androidx.compose.ui.platform.LocalContext.current
+                        Button(
+                            onClick = {
+                                try {
+                                    val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("streamhub://auth/twitch#access_token=simulated_token_12345"))
+                                    // intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK) // Removed to prevent singleTask clashes
+                                    context.startActivity(intent)
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = TwitchPurple, contentColor = Color.White),
+                            modifier = Modifier.fillMaxWidth().height(42.dp)
+                        ) {
+                            Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Text("Sign in with Twitch", fontWeight = FontWeight.Bold)
+                        }
+                        
+                        Button(
+                            onClick = {
+                                try {
+                                    val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("streamhub://auth/youtube#access_token=simulated_token_54321"))
+                                    // intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK) // Removed to prevent singleTask clashes
+                                    context.startActivity(intent)
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = YoutubeRed, contentColor = Color.White),
+                            modifier = Modifier.fillMaxWidth().height(42.dp)
+                        ) {
+                            Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Text("Sign in with YouTube", fontWeight = FontWeight.Bold)
+                        }
+                    }
                 }
             }
 

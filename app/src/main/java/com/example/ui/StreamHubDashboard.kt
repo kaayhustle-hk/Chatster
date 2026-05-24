@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.launch
 import com.example.data.StreamingPlatformEntity
 import com.example.viewmodel.StreamHubViewModel
 import com.example.viewmodel.LiveStreamInfo
@@ -75,6 +76,8 @@ fun StreamHubDashboard(
     val liveDuration by viewModel.liveBroadcastingDuration.collectAsStateWithLifecycle()
 
     val activePlatformsCount = platforms.count { it.isActive }
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
 
     BoxWithConstraints(
         modifier = modifier
@@ -83,17 +86,46 @@ fun StreamHubDashboard(
     ) {
         val isWide = maxWidth >= 850.dp
 
-        Scaffold(
-            topBar = {
-                DashboardHeader(
-                    isLive = isLive,
-                    liveDuration = liveDuration,
-                    activeDestinationsCount = activePlatformsCount,
-                    onToggleLive = { viewModel.toggleLiveBroadcast(activePlatformsCount) }
-                )
-            },
-            containerColor = Color.Transparent
-        ) { paddingValues ->
+        ModalNavigationDrawer(
+            drawerState = drawerState,
+            drawerContent = {
+                ModalDrawerSheet(drawerContainerColor = SlateGray) {
+                    Spacer(Modifier.height(16.dp))
+                    Text(
+                        "StreamHub Enterprise",
+                        modifier = Modifier.padding(16.dp),
+                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black, color = Color.White)
+                    )
+                    HorizontalDivider(color = CosmicBlack)
+                    NavigationDrawerItem(
+                        icon = { Icon(Icons.Default.Settings, contentDescription = "Settings", tint = Color.White) },
+                        label = { Text("App Settings", color = Color.White) },
+                        selected = activeTab == "Settings",
+                        onClick = { scope.launch { drawerState.close() }; viewModel.setActiveTab("Settings") },
+                        colors = NavigationDrawerItemDefaults.colors(unselectedContainerColor = Color.Transparent, selectedContainerColor = ActiveNeon.copy(alpha=0.2f))
+                    )
+                    NavigationDrawerItem(
+                        icon = { Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Log Out", tint = YoutubeRed) },
+                        label = { Text("Log Out", color = YoutubeRed) },
+                        selected = false,
+                        onClick = { scope.launch { drawerState.close() }; viewModel.logout() },
+                        colors = NavigationDrawerItemDefaults.colors(unselectedContainerColor = Color.Transparent)
+                    )
+                }
+            }
+        ) {
+            Scaffold(
+                topBar = {
+                    DashboardHeader(
+                        isLive = isLive,
+                        liveDuration = liveDuration,
+                        activeDestinationsCount = activePlatformsCount,
+                        onToggleLive = { viewModel.toggleLiveBroadcast(activePlatformsCount) },
+                        onMenuClick = { scope.launch { drawerState.open() } }
+                    )
+                },
+                containerColor = Color.Transparent
+            ) { paddingValues ->
             if (isWide) {
                 // Wide Pane Desktop Layout
                 Row(
@@ -173,6 +205,7 @@ fun StreamHubDashboard(
                 }
             }
         }
+        } // Close ModalNavigationDrawer
 
         // Configuration Ingest Editor
         if (editingPlatform != null) {
@@ -193,7 +226,8 @@ fun DashboardHeader(
     isLive: Boolean,
     liveDuration: Int,
     activeDestinationsCount: Int,
-    onToggleLive: () -> Unit
+    onToggleLive: () -> Unit,
+    onMenuClick: () -> Unit
 ) {
     val durationFormatted = remember(liveDuration) {
         val hrs = liveDuration / 3600
@@ -212,11 +246,15 @@ fun DashboardHeader(
         Row(
             modifier = Modifier
                 .statusBarsPadding()
-                .padding(horizontal = 18.dp, vertical = 12.dp),
+                .padding(horizontal = 12.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = onMenuClick) {
+                    Icon(Icons.Default.Menu, contentDescription = "Menu", tint = Color.White)
+                }
+                Spacer(modifier = Modifier.width(4.dp))
                 // Pulsing broadcast beacon
                 Box(contentAlignment = Alignment.Center) {
                     Box(
@@ -323,8 +361,8 @@ fun TabSelector(
 ) {
     val tabs = listOf(
         Pair("Stream Hub", Icons.Default.PlayArrow),
-        Pair("Live Chat", Icons.Default.Send),
-        Pair("Destinations", Icons.Default.List),
+        Pair("Live Chat", Icons.AutoMirrored.Filled.Send),
+        Pair("Destinations", Icons.AutoMirrored.Filled.List),
         Pair("Metadata Sync", Icons.Default.Refresh),
         Pair("Link Accounts", Icons.Default.AccountBox)
     )
@@ -399,7 +437,38 @@ fun WorkspaceContent(
         "Destinations" -> DestinationsTabContent(platforms = platforms, viewModel = viewModel)
         "Metadata Sync" -> MetadataSyncTabContent(platforms = platforms, viewModel = viewModel)
         "Link Accounts" -> LinkedProfilesTabContent(viewModel = viewModel)
+        "Settings" -> SettingsTabContent(viewModel = viewModel)
         else -> Text("Component Unavailable", color = Color.White)
+    }
+}
+
+@Composable
+fun SettingsTabContent(viewModel: StreamHubViewModel) {
+    Column(modifier = Modifier.fillMaxSize().padding(16.dp).verticalScroll(rememberScrollState())) {
+        Text("App Settings", style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold, color = Color.White))
+        Spacer(Modifier.height(24.dp))
+        Text("Data Redundancy", style = MaterialTheme.typography.titleMedium.copy(color = ActiveNeon, fontWeight = FontWeight.Bold))
+        Spacer(Modifier.height(8.dp))
+        Card(colors = CardDefaults.cardColors(containerColor = SlateGray)) {
+            Column(Modifier.padding(16.dp)) {
+                Text("Enable automated local data backups.", color = Color.White)
+                Spacer(Modifier.height(8.dp))
+                var redundancyEnabled by remember { mutableStateOf(true) }
+                Switch(checked = redundancyEnabled, onCheckedChange = { redundancyEnabled = it })
+            }
+        }
+        
+        Spacer(Modifier.height(24.dp))
+        Text("Stream Layout Protocol", style = MaterialTheme.typography.titleMedium.copy(color = ActiveNeon, fontWeight = FontWeight.Bold))
+        Spacer(Modifier.height(8.dp))
+        Card(colors = CardDefaults.cardColors(containerColor = SlateGray)) {
+            Column(Modifier.padding(16.dp)) {
+                Text("Render video streams using experimental ExoPlayer pipelines.", color = Color.White)
+                Spacer(Modifier.height(8.dp))
+                var experimentalGraphics by remember { mutableStateOf(false) }
+                Switch(checked = experimentalGraphics, onCheckedChange = { experimentalGraphics = it })
+            }
+        }
     }
 }
 
@@ -553,32 +622,18 @@ fun FocusVideoScreenPlayer(stream: LiveStreamInfo) {
             .testTag("focused_video_player")
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            // Canvas for simulated moving digital vector signal
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                val gridY = size.height / 2f
-                val count = 28
-                val spacing = size.width / count
-                
-                for (i in 0..count) {
-                    val factor = kotlin.math.sin((i.toFloat() / count * 4f * Math.PI) + (animatedWavelength * 2f * Math.PI)).toFloat()
-                    val barHeight = 120f * factor * (1f - (kotlin.math.abs(i - count / 2f).toFloat() / (count / 2f)))
-                    
-                    drawLine(
-                        color = specColor.copy(alpha = 0.35f),
-                        start = Offset(i * spacing, gridY - barHeight),
-                        end = Offset(i * spacing, gridY + barHeight),
-                        strokeWidth = 6f,
-                        cap = StrokeCap.Round
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black)
+            ) {
+                Canvas(modifier = Modifier.fillMaxSize()) {
+                    drawCircle(
+                        color = specColor.copy(alpha = 0.3f * animatedWavelength),
+                        radius = size.minDimension / (2f * (if (animatedWavelength > 0f) animatedWavelength else 0.1f)),
+                        center = center
                     )
                 }
-
-                // Crosshairs
-                drawLine(
-                    color = Color.White.copy(alpha = 0.15f),
-                    start = Offset(0f, gridY),
-                    end = Offset(size.width, gridY),
-                    strokeWidth = 1.dp.toPx()
-                )
             }
 
             // Custom UI elements overlaid
@@ -785,21 +840,18 @@ fun MosaicPlayerTile(
                 viewModel.setChatFilterPlatform(stream.platform)
             }
     ) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val h = size.height
-            val w = size.width
-            val pathBrush = Brush.linearGradient(listOf(platformColor.copy(alpha = 0.4f), Color.Transparent))
-            
-            // Draw visual grid and small canvas wave
-            drawRect(color = platformColor.copy(alpha = 0.05f))
-            drawCircle(color = platformColor.copy(alpha = 0.1f * randomWaveFactor), radius = w / 3, center = Offset(w/2, h/2))
-            
-            drawLine(
-                color = platformColor.copy(alpha = 0.4f),
-                start = Offset(10f, h - 30f),
-                end = Offset(w - 10f, h - 30f + (15f * randomWaveFactor)),
-                strokeWidth = 2.dp.toPx()
-            )
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black)
+        ) {
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                drawCircle(
+                    color = platformColor.copy(alpha = 0.3f * randomWaveFactor),
+                    radius = size.minDimension / (2f * (if (randomWaveFactor > 0f) randomWaveFactor else 0.1f)),
+                    center = center
+                )
+            }
         }
 
         Column(
@@ -1591,10 +1643,7 @@ fun LinkedProfilesTabContent(
 ) {
     val user by viewModel.currentUser.collectAsStateWithLifecycle()
 
-    var twitchHandle by remember { mutableStateOf("") }
-    var youtubeHandle by remember { mutableStateOf("") }
-    var kickHandle by remember { mutableStateOf("") }
-    var facebookHandle by remember { mutableStateOf("") }
+    var showOAuthDialogFor by remember { mutableStateOf<String?>(null) }
 
     // Password Update Fields
     var passwordUpdateRaw by remember { mutableStateOf("") }
@@ -1661,7 +1710,7 @@ fun LinkedProfilesTabContent(
                     onClick = { viewModel.logout() },
                     modifier = Modifier.testTag("logout_button")
                 ) {
-                    Icon(imageVector = Icons.Default.ExitToApp, contentDescription = "Log Out Securely", tint = YoutubeRed)
+                    Icon(imageVector = Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Log Out Securely", tint = YoutubeRed)
                 }
             }
         }
@@ -1689,9 +1738,7 @@ fun LinkedProfilesTabContent(
                     platformColor = TwitchPurple,
                     isLinked = user?.isTwitchLinked ?: false,
                     linkedUsername = user?.twitchUsername ?: "",
-                    draftValue = twitchHandle,
-                    onDraftChange = { twitchHandle = it },
-                    onLink = { viewModel.linkPlatformProfile("Twitch", twitchHandle); twitchHandle = "" },
+                    onLinkRequested = { showOAuthDialogFor = "Twitch" },
                     onUnlink = { viewModel.unlinkPlatformProfile("Twitch") }
                 )
 
@@ -1703,9 +1750,7 @@ fun LinkedProfilesTabContent(
                     platformColor = YoutubeRed,
                     isLinked = user?.isYoutubeLinked ?: false,
                     linkedUsername = user?.youtubeUsername ?: "",
-                    draftValue = youtubeHandle,
-                    onDraftChange = { youtubeHandle = it },
-                    onLink = { viewModel.linkPlatformProfile("YouTube", youtubeHandle); youtubeHandle = "" },
+                    onLinkRequested = { showOAuthDialogFor = "YouTube" },
                     onUnlink = { viewModel.unlinkPlatformProfile("YouTube") }
                 )
 
@@ -1717,26 +1762,18 @@ fun LinkedProfilesTabContent(
                     platformColor = KickGreen,
                     isLinked = user?.isKickLinked ?: false,
                     linkedUsername = user?.kickUsername ?: "",
-                    draftValue = kickHandle,
-                    onDraftChange = { kickHandle = it },
-                    onLink = { viewModel.linkPlatformProfile("Kick", kickHandle); kickHandle = "" },
+                    onLinkRequested = { showOAuthDialogFor = "Kick" },
                     onUnlink = { viewModel.unlinkPlatformProfile("Kick") }
                 )
-
-                HorizontalDivider(color = SlateGray, thickness = 0.5.dp)
-
-                // Facebook Link row
-                ConnectorIntegrationRow(
-                    platform = "Facebook",
-                    platformColor = FacebookBlue,
-                    isLinked = user?.isFacebookLinked ?: false,
-                    linkedUsername = user?.facebookUsername ?: "",
-                    draftValue = facebookHandle,
-                    onDraftChange = { facebookHandle = it },
-                    onLink = { viewModel.linkPlatformProfile("Facebook", facebookHandle); facebookHandle = "" },
-                    onUnlink = { viewModel.unlinkPlatformProfile("Facebook") }
-                )
             }
+        }
+
+        if (showOAuthDialogFor != null) {
+            AccountSignInDialog(
+                platform = showOAuthDialogFor!!,
+                onSuccess = { _, _, _ -> },
+                onCancel = { showOAuthDialogFor = null }
+            )
         }
 
         // Credentials Reset Section
@@ -1812,9 +1849,7 @@ fun ConnectorIntegrationRow(
     platformColor: Color,
     isLinked: Boolean,
     linkedUsername: String,
-    draftValue: String,
-    onDraftChange: (String) -> Unit,
-    onLink: () -> Unit,
+    onLinkRequested: () -> Unit,
     onUnlink: () -> Unit
 ) {
     Row(
@@ -1866,34 +1901,18 @@ fun ConnectorIntegrationRow(
             // Display unlinked text input connection
             Row(
                 modifier = Modifier.weight(1f),
+                horizontalArrangement = Arrangement.End,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                OutlinedTextField(
-                    value = draftValue,
-                    onValueChange = onDraftChange,
-                    placeholder = { Text("Channel user", color = MutedSlate, fontSize = 11.sp) },
-                    textStyle = MaterialTheme.typography.bodySmall.copy(color = Color.White),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = platformColor,
-                        unfocusedBorderColor = SlateGray
-                    ),
-                    singleLine = true,
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(38.dp)
-                        .testTag("link_input_${platform.lowercase()}")
-                )
-
-                Spacer(modifier = Modifier.width(8.dp))
-
-                Text(
-                    text = "Connect",
-                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
-                    color = platformColor,
-                    modifier = Modifier
-                        .clickable { onLink() }
-                        .testTag("link_btn_${platform.lowercase()}")
-                )
+                Button(
+                    onClick = onLinkRequested,
+                    colors = ButtonDefaults.buttonColors(containerColor = platformColor.copy(alpha = 0.2f)),
+                    shape = RoundedCornerShape(6.dp),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
+                    modifier = Modifier.height(36.dp)
+                ) {
+                    Text("Connect Account", color = platformColor, fontWeight = FontWeight.Bold)
+                }
             }
         }
     }
@@ -2268,6 +2287,103 @@ fun AddEditPlatformDialog(
                         colors = ButtonDefaults.buttonColors(containerColor = ActiveNeon, contentColor = CosmicBlack)
                     ) {
                         Text("APPLY PROFILE", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold))
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun AccountSignInDialog(
+    platform: String,
+    onSuccess: (String, String, String) -> Unit, // NOT USED ANYMORE
+    onCancel: () -> Unit
+) {
+    val context = LocalContext.current
+
+    val clientId = try {
+        val buildConfigClass = Class.forName("com.example.BuildConfig")
+        val field = buildConfigClass.getField(platform.uppercase() + "_CLIENT_ID")
+        field.get(null) as String
+    } catch (e: Exception) {
+        "${platform.uppercase()}_CLIENT_ID_DEFAULT_VALUE"
+    }
+    
+    val hasKeys = clientId != "${platform.uppercase()}_CLIENT_ID_DEFAULT_VALUE"
+
+    Dialog(onDismissRequest = onCancel) {
+        Card(
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = SlateGray),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp).fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Text(
+                    text = "Authenticate $platform",
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                    color = Color.White
+                )
+                
+                if (!hasKeys) {
+                    Text(
+                        text = "To truly connect to $platform, you must enter your developer API keys in the Secrets panel in AI Studio.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = YoutubeRed
+                    )
+                    Text(
+                        text = "For now, we will simulate the connection using a generated implicit OAuth flow so you can test functionality seamlessly.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MutedSlate
+                    )
+                } else {
+                    Text(
+                        text = "You are about to be redirected to $platform to securely authorize this application to read your stream URL and chat.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MutedSlate
+                    )
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(onClick = onCancel) {
+                        Text("Cancel", color = MutedSlate)
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(
+                        onClick = { 
+                            if (!hasKeys) {
+                                // Simulate OAuth return for demonstration since we lack keys
+                                try {
+                                    val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("streamhub://auth/${platform.lowercase()}#access_token=simulated_token_12345"))
+                                    context.startActivity(intent)
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+                                }
+                            } else {
+                                // Real OAuth implicit launch
+                                val authUrl = when(platform.lowercase()) {
+                                    "twitch" -> "https://id.twitch.tv/oauth2/authorize?client_id=${clientId}&redirect_uri=streamhub://auth/twitch&response_type=token&scope=channel%3Aread%3Astream_key+chat%3Aread"
+                                    "youtube" -> "https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=streamhub://auth/youtube&response_type=token&scope=https://www.googleapis.com/auth/youtube.readonly"
+                                    else -> "https://${platform.lowercase()}.com/oauth" // generic
+                                }
+                                try {
+                                    val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(authUrl))
+                                    context.startActivity(intent)
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+                                }
+                            }
+                            onCancel()
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = ActiveNeon, contentColor = CosmicBlack)
+                    ) {
+                        Text(if (hasKeys) "LAUNCH BROWSER" else "SIMULATE LOGIN", fontWeight = FontWeight.Bold)
                     }
                 }
             }
